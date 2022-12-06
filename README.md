@@ -9,11 +9,3 @@ ____
 ls
 ____
 # Import padrão de tudo que iremos usar em um tratamento dos dados!
-
-from pyspark.sql.functions import *
-import pandas as pd
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F
-import json
-import requests
-from pyspark.sql.functions import explode
