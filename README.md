@@ -8,4 +8,3 @@ ____
 %fs
 
 ls
-# Import padrão de tudo que iremos usar em um tratamento dos dados!
