@@ -1,0 +1,63 @@
+directory_path = "
+
+    #Função pra listar os arquivos no diretorio
+def list_json_files(directory_path):
+    try:
+        # Lista os arquivos no diretório
+        files = mssparkutils.fs.ls(directory_path)
+        
+        # Imprime o nome de cada arquivo que termina com ".json"
+        for file in files:
+            if file.name.endswith(".json"):
+                print(file.name)
+                insert_json_to_cosmosCardEmail(file.path)
+    except Exception as e:
+        print("Erro ao acessar o diretório:", str(e))
+    
+#list_json_files(directory_path)
+
+# Insert de json do card do Email
+def insert_json_to_cosmosCardEmail(json_path):
+    # Cria um objeto CosmosClient
+    client = CosmosClient('ENDPOINT', 'STRINGKEY')
+
+    # Obtém o objeto Container
+    database = client.get_database_client('teste')
+    container = database.get_container_client('testando1')
+
+    # Carrega os dados do arquivo JSON em um dataframe
+    df = spark.read.format("json").load(json_path)
+
+    # encontrando as colunas exclusivas
+    unique_cols = []
+    for col in df.columns:
+        unique_values = df.select(col).distinct().collect()
+        if len(unique_values) == df.count():
+            unique_cols.append(col)
+
+    # selecionando apenas as colunas exclusivas e removendo valores nulos
+    df_filtered = df.select(unique_cols).na.drop()
+
+    # convertendo em JSON
+    json_str = df_filtered.toJSON().collect()
+
+    # iterando sobre as linhas do JSON e convertendo em um dicionário
+    result = []
+    for row in json_str:
+        row_dict = json.loads(row)
+        result.append(row_dict)
+
+    # salvando o resultado em um arquivo JSON
+    df_result = spark.createDataFrame(result)
+
+    # Insere os dados do dataframe no Cosmos DB
+    for row in df_result.collect():
+        container.upsert_item({
+            'userID': row['userID'],
+            'id': row['id'],
+            'FormRecogCard': row['FormRecogCard'],
+            'creatdate': row['creatdate'],
+            'origin': row['origin']
+        })
+        
+        
